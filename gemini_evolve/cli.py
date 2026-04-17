@@ -30,6 +30,12 @@ def main():
     help="Where to source evaluation data.",
 )
 @click.option("--eval-dataset", type=click.Path(exists=True, path_type=Path), default=None)
+@click.option(
+    "--dataset-size",
+    type=int,
+    default=None,
+    help="Max number of eval examples to mine/generate. Default 10.",
+)
 @click.option("--dry-run", is_flag=True, help="Validate only, don't optimize.")
 @click.option("--llm-judge", is_flag=True, help="Use LLM judge instead of fast heuristic.")
 @click.option("--output", "-o", type=click.Path(path_type=Path), default="output")
@@ -69,6 +75,7 @@ def evolve(
     population: int,
     eval_source: str,
     eval_dataset: Path | None,
+    dataset_size: int | None,
     dry_run: bool,
     llm_judge: bool,
     output: Path,
@@ -84,6 +91,8 @@ def evolve(
     config.generations = generations
     config.population_size = population
     config.output_dir = output
+    if dataset_size is not None:
+        config.dataset_size = dataset_size
 
     if engine == "gepa":
         from .gepa_evolve import evolve_with_gepa
