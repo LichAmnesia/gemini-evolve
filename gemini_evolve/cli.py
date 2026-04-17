@@ -34,6 +34,35 @@ def main():
 @click.option("--llm-judge", is_flag=True, help="Use LLM judge instead of fast heuristic.")
 @click.option("--output", "-o", type=click.Path(path_type=Path), default="output")
 @click.option("--apply", is_flag=True, help="Write back to original file if improved (backup created).")
+@click.option(
+    "--engine",
+    type=click.Choice(["ga", "gepa"]),
+    default="ga",
+    help="Evolution engine: 'ga' = built-in tournament GA, 'gepa' = DSPy+GEPA reflective.",
+)
+@click.option(
+    "--capture-trace",
+    is_flag=True,
+    help="(GEPA only) Capture Gemini CLI tool trajectories and feed them into reflection.",
+)
+@click.option(
+    "--gepa-budget",
+    type=click.Choice(["light", "medium", "heavy"]),
+    default="light",
+    help="(GEPA only) Auto-budget: approx. metric-call budget. Default 'light'.",
+)
+@click.option(
+    "--reflection-model",
+    default=None,
+    help="(GEPA only) Model for the reflector LM. Defaults to config.judge_model.",
+)
+@click.option(
+    "--no-deploy-mode",
+    is_flag=True,
+    default=False,
+    help="(GEPA only) Disable writing candidate to .gemini/GEMINI.md in the isolated cwd. "
+    "Default is deploy-mode ON so the Gemini CLI loads each candidate via normal discovery.",
+)
 def evolve(
     target: Path,
     generations: int,
@@ -44,24 +73,45 @@ def evolve(
     llm_judge: bool,
     output: Path,
     apply: bool,
+    engine: str,
+    capture_trace: bool,
+    gepa_budget: str,
+    reflection_model: str | None,
+    no_deploy_mode: bool,
 ):
     """Evolve a single target file (GEMINI.md, command, or skill)."""
-    from .evolve import evolve as run_evolve
-
     config = EvolutionConfig.from_env()
     config.generations = generations
     config.population_size = population
     config.output_dir = output
 
-    result = run_evolve(
-        target_path=target,
-        config=config,
-        eval_source=eval_source,
-        eval_dataset_path=eval_dataset,
-        dry_run=dry_run,
-        use_llm_judge=llm_judge,
-        apply=apply,
-    )
+    if engine == "gepa":
+        from .gepa_evolve import evolve_with_gepa
+
+        result = evolve_with_gepa(
+            target_path=target,
+            config=config,
+            eval_source=eval_source,
+            eval_dataset_path=eval_dataset,
+            dry_run=dry_run,
+            apply=apply,
+            reflection_model=reflection_model,
+            capture_trace=capture_trace,
+            auto_budget=gepa_budget,
+            deploy_mode=not no_deploy_mode,
+        )
+    else:
+        from .evolve import evolve as run_evolve
+
+        result = run_evolve(
+            target_path=target,
+            config=config,
+            eval_source=eval_source,
+            eval_dataset_path=eval_dataset,
+            dry_run=dry_run,
+            use_llm_judge=llm_judge,
+            apply=apply,
+        )
 
     if result.improved and result.constraints_passed:
         raise SystemExit(0)

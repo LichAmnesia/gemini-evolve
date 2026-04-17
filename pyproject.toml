@@ -13,6 +13,9 @@ dependencies = [
 dev = [
     "pytest>=8.0",
 ]
+dspy = [
+    "dspy>=2.6",
+]
 
 [project.scripts]
 gemini-evolve = "gemini_evolve.cli:main"

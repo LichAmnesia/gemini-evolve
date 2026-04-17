@@ -1,0 +1,25 @@
+2026-04-16 codemap/doc refresh
+
+Previous state:
+- No repo-local `docs/` tree
+- No codemap files
+- README only
+
+Created baseline docs:
+- docs/CODEMAPS/INDEX.md
+- docs/CODEMAPS/core.md
+- docs/CODEMAPS/triggers.md
+- docs/CODEMAPS/integrations.md
+- docs/CONTRIB.md
+- docs/RUNBOOK.md
+
+README changes:
+- rewrote setup and quickstart around local `.venv`
+- aligned CLI reference with current Click commands
+- documented real output artifact layout
+- included optional DSPy/GEPA engine and install path
+- aligned backup behavior with code change to preserve full original filename
+
+Diff threshold note:
+- No previous codemap baseline in repo
+- "changes > 30%" approval rule not applicable for initial doc creation

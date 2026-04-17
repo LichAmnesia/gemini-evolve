@@ -1,307 +1,225 @@
 # gemini-evolve
 
-Self-evolution system for Gemini CLI — automatically improves system instructions, commands, and skills through LLM-guided mutation and evaluation.
+`gemini-evolve` improves Gemini CLI instruction artifacts by mutating candidates with Gemini CLI itself, scoring them against evaluation tasks, and only applying changes when hard gates pass.
 
-All LLM calls go through `gemini` CLI (`gemini -p "..." -o json`). No direct API calls, no API keys, no SDK. Uses your existing Gemini CLI auth and quota.
+- No direct Gemini SDK/API usage.
+- All model calls go through `gemini -p ... -o json`.
+- Docs: [Architecture](docs/CODEMAPS/INDEX.md), [Contrib](docs/CONTRIB.md), [Runbook](docs/RUNBOOK.md)
 
-## How It Works
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│                    EVOLUTION LOOP                             │
-│                                                              │
-│  1. LOAD target (GEMINI.md / command / skill)                │
-│  2. GENERATE evaluation dataset (synthetic / session)        │
-│  3. VALIDATE baseline constraints                            │
-│                                                              │
-│  ┌─── For each generation ────────────────────────────────┐  │
-│  │  4. MUTATE → N variants via gemini CLI                 │  │
-│  │  5. EVALUATE each variant via gemini CLI (real env)    │  │
-│  │  6. SELECT best (tournament) + optional crossover      │  │
-│  │  7. CONSTRAIN → reject if size/growth exceeded         │  │
-│  └────────────────────────────────────────────────────────┘  │
-│                                                              │
-│  8. EVALUATE winner on holdout set vs baseline               │
-│  9. --apply → backup + overwrite original file               │
-│     → next gemini session automatically uses new version     │
-└──────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Full Setup Guide (Zero to Automated)
-
-### Step 1: Install
+## Install
 
 ```bash
-# Clone and install
 cd ~/ws/gemini-evolve
 python3 -m venv .venv
-.venv/bin/pip install -e ".[dev]"
+./.venv/bin/pip install -e ".[dev]"
 
-# Add to PATH
-ln -sf ~/ws/gemini-evolve/.venv/bin/gemini-evolve ~/.local/bin/gemini-evolve
-
-# Verify
-gemini-evolve --version
-# gemini-evolve, version 0.1.0
-
-# Also verify Gemini CLI is installed and authed
+./.venv/bin/gemini-evolve --version
 gemini --version
 ```
 
-### Step 2: Create seed GEMINI.md
+If the venv is activated, drop the `./.venv/bin/` prefix.
 
-gemini-evolve needs a file to evolve. If you don't have `~/.gemini/GEMINI.md` yet:
-
-```bash
-cat > ~/.gemini/GEMINI.md << 'EOF'
-# Global Gemini CLI Instructions
-
-## Work Style
-- 中文交流优先，代码/commit 用英文
-- Concise responses, minimal tokens
-- Fix root cause, not band-aids
-
-## Code Standards
-- Conventional Commits
-- Files < 500 LOC; refactor as needed
-- Add regression tests for bugs
-
-## Git
-- Safe by default: status/diff/log before destructive ops
-- Never force push to main/master
-EOF
-```
-
-### Step 3: Verify targets exist
+To use the optional GEPA/DSPy engine:
 
 ```bash
-gemini-evolve discover --type instructions
-#   /Users/you/.gemini/GEMINI.md (0.5KB)
-#   /Users/you/ws/project/.gemini/GEMINI.md (1.2KB)
-
-gemini-evolve discover --type commands
-gemini-evolve discover --type skills
+./.venv/bin/pip install -e ".[dev,dspy]"
 ```
 
-### Step 4: Dry run (validate constraints, no CLI calls)
+## Quickstart
+
+1. Pick a target.
 
 ```bash
-gemini-evolve evolve ~/.gemini/GEMINI.md --dry-run
-# PASS non_empty
-# PASS size_limit: 0.5KB <= 15.0KB
+mkdir -p ~/.gemini
+test -f ~/.gemini/GEMINI.md || printf '# Gemini Instructions\n' > ~/.gemini/GEMINI.md
+
+./.venv/bin/gemini-evolve discover --type instructions
 ```
 
-### Step 5: First evolution (review only, don't write back)
+2. Validate constraints only.
 
 ```bash
-# Small run to validate pipeline works
-gemini-evolve evolve ~/.gemini/GEMINI.md -g 2 -p 2
+./.venv/bin/gemini-evolve evolve ~/.gemini/GEMINI.md --dry-run
 ```
 
-Review what changed:
+3. Run a small review pass.
 
 ```bash
-# See the diff
-diff output/global/*/baseline.md output/global/*/evolved.md
-
-# See scores
-cat output/global/*/metrics.json
+./.venv/bin/gemini-evolve evolve ~/.gemini/GEMINI.md -g 2 -p 2
 ```
 
-### Step 6: Evolve and apply
-
-Once you trust the pipeline, use `--apply` to write back:
+4. Inspect artifacts.
 
 ```bash
-gemini-evolve evolve ~/.gemini/GEMINI.md --apply
+find output -maxdepth 3 -type f | sort
+cat output/global/$(ls -t output/global | head -1)/metrics.json
 ```
 
-What happens:
-1. Runs evolution (5 generations × 4 variants by default)
-2. If improved ≥2% AND passes all constraints:
-   - Backs up original → `GEMINI.md.20260416_120000.bak`
-   - Overwrites `~/.gemini/GEMINI.md` with evolved version
-   - **Next `gemini` CLI session automatically uses the new version**
-3. If not improved enough: saves to `output/` only, original unchanged
-
-### Step 7: Set up automation
-
-Choose one:
-
-#### Option A: Auto-evolve after every Gemini CLI session
+5. Apply only after you trust the loop.
 
 ```bash
-# Watches ~/.gemini/tmp for new session files
-# 60s after last file change → triggers evolution → applies if improved
-gemini-evolve trigger watch --apply
-
-# Runs in foreground. To background it:
-nohup gemini-evolve trigger watch --apply > ~/.gemini/evolve-watch.log 2>&1 &
+./.venv/bin/gemini-evolve evolve ~/.gemini/GEMINI.md --apply
 ```
 
-#### Option B: Scheduled (every N hours)
+When `--apply` succeeds, the original file is backed up as `GEMINI.md.<UTC timestamp>.bak` before overwrite.
+
+Optional GEPA pass:
 
 ```bash
-# Install launchd job: evolve every 12 hours and auto-apply
-gemini-evolve trigger cron-install --interval 12 --apply
-
-# Check status
-gemini-evolve trigger cron-status
-
-# Remove
-gemini-evolve trigger cron-remove
+./.venv/bin/gemini-evolve evolve ~/.gemini/GEMINI.md --engine gepa --capture-trace --gepa-budget light
 ```
-
-Logs at `~/.gemini/evolve.log` and `~/.gemini/evolve-error.log`.
-
-#### Option C: Git hook (evolve when you change instructions)
-
-```bash
-cd ~/ws/my-project
-gemini-evolve trigger hook-install .
-
-# Triggers when commits modify GEMINI.md or .gemini/ files
-```
-
-### Step 8: Monitor and rollback
-
-```bash
-# See evolution history
-ls output/global/
-
-# See latest results
-cat output/global/$(ls -t output/global/ | head -1)/metrics.json
-
-# List backups
-ls ~/.gemini/GEMINI.md.*.bak
-
-# Rollback to a specific backup
-cp ~/.gemini/GEMINI.md.20260416_120000.bak ~/.gemini/GEMINI.md
-```
-
----
 
 ## What Gets Evolved
 
-| Target | Path | Scope | Command |
-|--------|------|-------|---------|
-| Global instructions | `~/.gemini/GEMINI.md` | All gemini sessions | `gemini-evolve evolve ~/.gemini/GEMINI.md --apply` |
-| Project instructions | `<project>/.gemini/GEMINI.md` | That project only | `gemini-evolve evolve <path> --apply` |
-| Custom commands | `~/.gemini/commands/*.toml` | Slash commands | `gemini-evolve evolve <path> --apply` |
-| Skills | `~/.gemini/skills/*.md` | Skill definitions | `gemini-evolve evolve <path> --apply` |
+| Target | Path pattern | Scope |
+| --- | --- | --- |
+| Global instructions | `~/.gemini/GEMINI.md` | All Gemini CLI sessions |
+| Project instructions | `<project>/.gemini/GEMINI.md` | One project |
+| Commands | `~/.gemini/commands/*.toml` | Custom slash commands |
+| Skills | `~/.gemini/skills/**/*.md` | Skill definitions |
 
-Batch evolve all targets of a type:
+Project-level instruction discovery scans `~/ws`, `~/projects`, and `~/code` by default. Override with `GEMINI_EVOLVE_PROJECT_PATHS=/path/a:/path/b`.
+
+## Evolution Loop
+
+```text
+target file
+  -> build eval dataset
+  -> validate baseline constraints
+  -> mutate N variants via gemini CLI
+  -> evaluate variants in sandbox/plan mode
+  -> tournament select + optional crossover
+  -> holdout compare vs baseline
+  -> save output/<target>/<timestamp>/
+  -> optionally apply back to source file
+```
+
+Real entry points:
+
+- [gemini_evolve/cli.py](gemini_evolve/cli.py)
+- [gemini_evolve/evolve.py](gemini_evolve/evolve.py)
+- [gemini_evolve/gepa_evolve.py](gemini_evolve/gepa_evolve.py)
+- [gemini_evolve/dspy_adapter.py](gemini_evolve/dspy_adapter.py)
+- [gemini_evolve/cli_runner.py](gemini_evolve/cli_runner.py)
+
+## Evaluation Sources
+
+| Source | Flag | Source of truth |
+| --- | --- | --- |
+| Synthetic | `--eval-source synthetic` | Gemini-generated test scenarios from the current instructions |
+| Session | `--eval-source session` | `~/.gemini/tmp/*/chats/session-*.json` user messages |
+| Golden | `--eval-source golden --eval-dataset data.jsonl` | Hand-curated JSONL dataset |
+
+Session mining skips messages that look like secrets or credentials.
+
+## Outputs And Gates
+
+Each run writes:
+
+- `output/<target_name>/<UTC timestamp>/baseline.md`
+- `output/<target_name>/<UTC timestamp>/evolved.md`
+- `output/<target_name>/<UTC timestamp>/metrics.json`
+
+`--apply` writes back only when all of these are true:
+
+1. Content is non-empty.
+2. Size stays under the per-target cap.
+3. Growth stays within the configured growth cap.
+4. Holdout improvement meets `min_improvement_pct` (default `2.0`).
+5. Evolved content actually differs from baseline.
+
+Current size caps:
+
+- Instructions: `15KB`
+- Skills: `15KB`
+- Commands: `5KB`
+
+## Trigger Automation
+
+Watch for completed Gemini sessions:
 
 ```bash
-gemini-evolve evolve-all --type instructions --apply
-gemini-evolve evolve-all --type commands --apply
-gemini-evolve evolve-all --type skills --apply
+./.venv/bin/gemini-evolve trigger watch --apply
 ```
 
----
+Install a launchd job on macOS:
 
-## CLI Reference
-
+```bash
+./.venv/bin/gemini-evolve trigger cron-install --interval 12 --apply
+./.venv/bin/gemini-evolve trigger cron-status
+./.venv/bin/gemini-evolve trigger cron-remove
 ```
-gemini-evolve evolve <target> [OPTIONS]
 
-  -g, --generations N       Evolution generations (default: 5)
-  -p, --population N        Variants per generation (default: 4)
-  --eval-source TYPE        synthetic | session | golden (default: synthetic)
-  --eval-dataset PATH       JSONL file for --eval-source golden
-  --llm-judge               Use LLM judge scoring (slower, more accurate)
-  --apply                   Write back to original file if improved
-  --dry-run                 Validate constraints only, no evolution
-  -o, --output PATH         Output directory (default: output)
+Install a git post-commit hook:
 
-gemini-evolve evolve-all --type TYPE [OPTIONS]
-  Same options as evolve, applied to all targets of TYPE.
+```bash
+./.venv/bin/gemini-evolve trigger hook-install .
+./.venv/bin/gemini-evolve trigger hook-remove .
+```
 
-gemini-evolve discover --type TYPE
-  List all discoverable targets.
+The hook triggers when committed files match `GEMINI.md` or `.gemini/`.
 
-gemini-evolve trigger watch [OPTIONS]
-  --debounce N              Seconds to wait after last file change (default: 60)
-  --type TYPE               Target type to evolve (default: instructions)
-  --apply                   Auto-apply evolved results
+## Configuration
 
-gemini-evolve trigger cron-install [OPTIONS]
-  --interval N              Run every N hours (default: 24)
-  --type TYPE               Target type to evolve (default: instructions)
-  --apply                   Auto-apply evolved results
+Environment variables read by the code:
 
+| Variable | Default | Used by |
+| --- | --- | --- |
+| `GEMINI_EVOLVE_HOME` | `~/.gemini` | Base Gemini home for targets and session mining |
+| `GEMINI_EVOLVE_MUTATOR_MODEL` | `gemini-3-flash-preview` | Variant generation |
+| `GEMINI_EVOLVE_JUDGE_MODEL` | `gemini-2.5-pro-preview-05-06` | LLM judge scoring |
+| `GEMINI_EVOLVE_POPULATION` | `4` | Population size |
+| `GEMINI_EVOLVE_GENERATIONS` | `5` | Number of generations |
+| `GEMINI_EVOLVE_OUTPUT` | `output` | Result directory |
+| `GEMINI_EVOLVE_PROJECT_PATHS` | `~/ws:~/projects:~/code` | Project search roots for `.gemini/GEMINI.md` |
+
+## CLI Surface
+
+```text
+gemini-evolve discover --type instructions|commands|skills
+gemini-evolve evolve TARGET [--dry-run] [--apply] [-g N] [-p N] [--engine ga|gepa]
+                     [--capture-trace] [--gepa-budget light|medium|heavy]
+                     [--reflection-model MODEL]
+gemini-evolve evolve-all --type instructions|commands|skills [--apply]
+gemini-evolve trigger watch [--dir PATH] [--debounce FLOAT] [--type TYPE] [--apply]
+gemini-evolve trigger cron-install [--interval N] [--type TYPE] [--apply]
 gemini-evolve trigger cron-status
 gemini-evolve trigger cron-remove
-
 gemini-evolve trigger hook-install [REPO]
 gemini-evolve trigger hook-remove [REPO]
 ```
 
-## Evaluation Sources
+Runtime detail: agent simulations call `gemini -p ... -o json --sandbox --approval-mode plan`, then parse the first JSON blob from stdout so MCP warnings do not break evaluation.
 
-| Source | Flag | When to use |
-|--------|------|-------------|
-| Synthetic | `--eval-source synthetic` | Default. Gemini generates test tasks from instructions. |
-| Session | `--eval-source session` | Uses your real Gemini CLI history (8000+ sessions). |
-| Golden | `--eval-source golden --eval-dataset data.jsonl` | Hand-curated evaluation set. |
+Engine detail:
 
-## Safety Gates
-
-Before `--apply` writes anything back, all gates must pass:
-
-1. **Size limit**: ≤15KB instructions/skills, ≤5KB commands
-2. **Growth limit**: Max +20% size increase over baseline
-3. **Non-empty**: Content must not be blank
-4. **Min improvement**: ≥2% on holdout set (configurable)
-5. **Backup**: Original saved as `<file>.<timestamp>.bak` before overwrite
-
-If any gate fails, results are saved to `output/` only.
-
-## Configuration
-
-Environment variables (optional — defaults are sensible):
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `GEMINI_EVOLVE_POPULATION` | `4` | Variants per generation |
-| `GEMINI_EVOLVE_GENERATIONS` | `5` | Number of generations |
-| `GEMINI_EVOLVE_OUTPUT` | `output` | Output directory |
-| `GEMINI_EVOLVE_PROJECT_PATHS` | `~/ws:~/projects:~/code` | Dirs to scan for project GEMINI.md |
-
-## Architecture
-
-```
-gemini_evolve/
-├── cli.py              # Click CLI entry point
-├── cli_runner.py       # gemini CLI subprocess (gemini -p ... -o json)
-├── config.py           # EvolutionConfig dataclass
-├── evolve.py           # Core evolution loop (tournament selection)
-├── dataset.py          # Eval dataset generation/loading
-├── fitness.py          # Scoring: fast heuristic + LLM judge
-├── constraints.py      # Size/growth/structure validation
-├── mutator.py          # LLM-guided mutation + crossover
-├── session_miner.py    # Mine Gemini CLI session history (~/.gemini/tmp/)
-├── json_utils.py       # Robust JSON extraction
-└── triggers/
-    ├── cron.py         # macOS launchd plist
-    ├── watcher.py      # File system watcher (watchdog)
-    └── hook.py         # Git post-commit hook
-```
-
-All LLM calls: `cli_runner.py` → `gemini -p "..." -o json --sandbox --approval-mode plan`
-
-## Performance
-
-- Each evaluation = 1 `gemini -p` call (~10-60s)
-- Default run (5 gen × 4 variants × 10 eval examples) ≈ 200 CLI calls
-- First run: use `-g 2 -p 2` to validate quickly
-- Timeouts (300s) are skipped, not scored as 0
+- `ga` is the built-in tournament-style genetic loop in `gemini_evolve/evolve.py`.
+- `gepa` routes optimization through DSPy GEPA in `gemini_evolve/gepa_evolve.py`.
+- `evolve-all` currently uses the GA path only.
 
 ## Development
 
 ```bash
-.venv/bin/pip install -e ".[dev]"
-pytest  # 62 tests
+./.venv/bin/pip install -e ".[dev]"
+./.venv/bin/python -m gemini_evolve.cli --help
+./.venv/bin/pytest -q
+```
+
+Source tree:
+
+```text
+gemini_evolve/
+  cli.py              Click CLI entry point
+  evolve.py           Core loop, result saving, apply logic
+  gepa_evolve.py      Optional DSPy GEPA engine
+  dspy_adapter.py     DSPy LM adapter backed by the gemini CLI
+  cli_runner.py       Non-interactive gemini CLI subprocess wrapper
+  dataset.py          Synthetic and golden dataset handling
+  mutator.py          Mutation and crossover prompts
+  fitness.py          Heuristic and LLM-judge scoring
+  constraints.py      Non-empty, size, growth gates
+  session_miner.py    Real-session dataset extraction with secret filtering
+  json_utils.py       JSON extraction from messy LLM output
+  triggers/           watch, cron, hook automation
+tests/                Unit tests for parsing, constraints, hooks, datasets, apply
 ```

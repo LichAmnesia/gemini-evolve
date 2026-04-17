@@ -14,9 +14,10 @@ class EvolutionConfig:
     # Gemini CLI paths
     gemini_home: Path = field(default_factory=lambda: Path.home() / ".gemini")
 
-    # Model selection
+    # Model selection — all names must be valid CLI `-m` values (API-only
+    # ids like `gemini-2.5-pro-preview-05-06` return ModelNotFoundError).
     mutator_model: str = "gemini-3-flash-preview"
-    judge_model: str = "gemini-2.5-pro-preview-05-06"
+    judge_model: str = "gemini-3-pro-preview"
     dataset_model: str = "gemini-3-flash-preview"
 
     # Evolution parameters

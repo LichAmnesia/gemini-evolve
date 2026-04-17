@@ -572,9 +572,9 @@ def _apply_result(result: EvolutionResult, config: EvolutionConfig) -> None:
         console.print(f"[red]--apply: target file not found: {target}[/red]")
         return
 
-    # Backup: GEMINI.md → GEMINI.md.20260415_143000.bak
+    # Backup: GEMINI.md -> GEMINI.md.20260415_143000.bak
     ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    backup_path = target.with_suffix(f".{ts}.bak")
+    backup_path = target.with_name(f"{target.name}.{ts}.bak")
     backup_path.write_text(result.baseline_content)
 
     # Write evolved content back
