@@ -120,13 +120,13 @@ Install in a repo:
 
 ```bash
 cd /path/to/repo
-/Users/lich/ws/gemini-evolve/.venv/bin/gemini-evolve trigger hook-install .
+/path/to/gemini-evolve/.venv/bin/gemini-evolve trigger hook-install .
 ```
 
 Remove:
 
 ```bash
-/Users/lich/ws/gemini-evolve/.venv/bin/gemini-evolve trigger hook-remove .
+/path/to/gemini-evolve/.venv/bin/gemini-evolve trigger hook-remove .
 ```
 
 The managed hook block only reacts to commits that touch `GEMINI.md` or `.gemini/`.
