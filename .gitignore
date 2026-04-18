@@ -7,3 +7,4 @@ dist/
 build/
 *.pyc
 .gemini/evolve*.log
+SPEC.md
