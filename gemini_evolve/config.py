@@ -39,6 +39,9 @@ class EvolutionConfig:
     # Output
     output_dir: Path = field(default_factory=lambda: Path("output"))
 
+    # Runtime switches applied to every `gemini` CLI invocation
+    no_mcp: bool = False
+
     @property
     def gemini_instructions_dir(self) -> Path:
         return self.gemini_home
@@ -66,12 +69,16 @@ class EvolutionConfig:
             kwargs["mutator_model"] = v
         if v := os.environ.get("GEMINI_EVOLVE_JUDGE_MODEL"):
             kwargs["judge_model"] = v
+        if v := os.environ.get("GEMINI_EVOLVE_DATASET_MODEL"):
+            kwargs["dataset_model"] = v
         if v := os.environ.get("GEMINI_EVOLVE_POPULATION"):
             kwargs["population_size"] = int(v)
         if v := os.environ.get("GEMINI_EVOLVE_GENERATIONS"):
             kwargs["generations"] = int(v)
         if v := os.environ.get("GEMINI_EVOLVE_OUTPUT"):
             kwargs["output_dir"] = Path(v)
+        if os.environ.get("GEMINI_EVOLVE_NO_MCP", "").lower() in ("1", "true", "yes"):
+            kwargs["no_mcp"] = True
         return cls(**kwargs)
 
 

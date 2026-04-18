@@ -177,6 +177,7 @@ class GeminiCLILM(_DSPyLM):  # type: ignore[misc]
         capture_trace: bool = False,
         gemini_home: Path | None = None,
         isolated_cwd: Path | None = None,
+        no_mcp: bool = False,
         **kwargs: Any,
     ) -> None:
         if not _DSPY_AVAILABLE:
@@ -188,6 +189,7 @@ class GeminiCLILM(_DSPyLM):  # type: ignore[misc]
         self.timeout_seconds = timeout_seconds
         self.field_name = field_name
         self.capture_trace = capture_trace
+        self.no_mcp = no_mcp
         self.gemini_home = gemini_home or Path.home() / ".gemini"
         self._owns_cwd = isolated_cwd is None
         self._isolated_cwd = isolated_cwd or Path(
@@ -220,6 +222,7 @@ class GeminiCLILM(_DSPyLM):  # type: ignore[misc]
             model=self._cli_model,
             timeout_seconds=self.timeout_seconds,
             cwd=self._isolated_cwd,
+            no_mcp=self.no_mcp,
         )
         elapsed = (datetime.datetime.now() - started).total_seconds()
 

@@ -88,8 +88,9 @@ Respond with ONLY a JSON array:
 class SyntheticDatasetBuilder:
     """Generates evaluation datasets using Gemini CLI."""
 
-    def __init__(self, model: str | None = None):
+    def __init__(self, model: str | None = None, *, no_mcp: bool = False):
         self.model = model
+        self.no_mcp = no_mcp
 
     def generate(
         self,
@@ -103,6 +104,7 @@ class SyntheticDatasetBuilder:
             prompt=prompt,
             model=self.model,
             timeout_seconds=120,
+            no_mcp=self.no_mcp,
         )
         if not result.ok:
             return EvalDataset()

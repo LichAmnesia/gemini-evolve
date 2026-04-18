@@ -50,6 +50,7 @@ def run_gemini_cli(
     model: str | None = None,
     cwd: Path | None = None,
     sandbox: bool = False,
+    no_mcp: bool = False,
 ) -> CLIResult:
     """Execute a single prompt via `gemini -p "..." -o json`.
 
@@ -67,6 +68,10 @@ def run_gemini_cli(
             execution, so the sandbox adds 5–20s of startup overhead per
             call without any extra safety. Opt in if you have custom tools
             that can bypass plan mode.
+        no_mcp: If True, disables every MCP server for this call by passing
+            ``--allowed-mcp-server-names __none__``. Useful when a broken
+            MCP server is causing the CLI to bail, or to shave the 10–30s
+            MCP bootstrap from each evaluation call.
     """
     gemini = find_gemini_cli()
     if not gemini:
@@ -77,6 +82,8 @@ def run_gemini_cli(
         cmd.extend(["-m", model])
     if sandbox:
         cmd.extend(["--sandbox"])
+    if no_mcp:
+        cmd.extend(["--allowed-mcp-server-names", "__none__"])
     # Plan mode prevents the CLI from executing tools during evaluation.
     cmd.extend(["--approval-mode", "plan"])
 

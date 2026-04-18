@@ -69,6 +69,14 @@ def main():
     help="(GEPA only) Disable writing candidate to .gemini/GEMINI.md in the isolated cwd. "
     "Default is deploy-mode ON so the Gemini CLI loads each candidate via normal discovery.",
 )
+@click.option(
+    "--no-mcp",
+    is_flag=True,
+    default=False,
+    help="Disable every MCP server for evaluation calls by passing "
+    "--allowed-mcp-server-names __none__ to gemini. Use when a broken MCP "
+    "is breaking the run, or to shave MCP startup time.",
+)
 def evolve(
     target: Path,
     generations: int,
@@ -85,6 +93,7 @@ def evolve(
     gepa_budget: str,
     reflection_model: str | None,
     no_deploy_mode: bool,
+    no_mcp: bool,
 ):
     """Evolve a single target file (GEMINI.md, command, or skill)."""
     config = EvolutionConfig.from_env()
@@ -93,6 +102,8 @@ def evolve(
     config.output_dir = output
     if dataset_size is not None:
         config.dataset_size = dataset_size
+    if no_mcp:
+        config.no_mcp = True
 
     if engine == "gepa":
         from .gepa_evolve import evolve_with_gepa
@@ -157,6 +168,12 @@ def evolve(
     default="light",
     help="(GEPA only) Auto-budget: approx. metric-call budget. Default 'light'.",
 )
+@click.option(
+    "--no-mcp",
+    is_flag=True,
+    default=False,
+    help="Disable every MCP server for evaluation calls. See `evolve --help`.",
+)
 def evolve_all(
     target_type: str,
     generations: int,
@@ -169,6 +186,7 @@ def evolve_all(
     apply: bool,
     engine: str,
     gepa_budget: str,
+    no_mcp: bool,
 ):
     """Discover and evolve all targets of a given type."""
     from .evolve import discover_targets
@@ -180,6 +198,8 @@ def evolve_all(
     config.generations = generations
     config.population_size = population
     config.output_dir = output
+    if no_mcp:
+        config.no_mcp = True
 
     targets = discover_targets(config, target_type)
     if not targets:

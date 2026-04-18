@@ -312,6 +312,7 @@ def evolve_with_gepa(
         capture_trace=capture_trace,
         gemini_home=config.gemini_home,
         isolated_cwd=isolated_cwd,
+        no_mcp=config.no_mcp,
     )
     reflector_lm = GeminiCLILM(
         model=reflection_model or config.judge_model,
@@ -321,6 +322,7 @@ def evolve_with_gepa(
         # Reflector runs prompt-only — give it an empty cwd so its calls
         # don't see whatever candidate the worker just wrote to disk.
         isolated_cwd=Path(tempfile.mkdtemp(prefix="gemini_evolve_reflector_")),
+        no_mcp=config.no_mcp,
     )
     dspy.settings.configure(lm=worker_lm)
 

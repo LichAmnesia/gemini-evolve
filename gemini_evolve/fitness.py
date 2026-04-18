@@ -46,8 +46,9 @@ Respond with ONLY valid JSON:
 class LLMJudge:
     """Uses Gemini CLI to evaluate instruction quality on task examples."""
 
-    def __init__(self, model: str | None = None):
+    def __init__(self, model: str | None = None, *, no_mcp: bool = False):
         self.model = model
+        self.no_mcp = no_mcp
 
     def score(
         self,
@@ -67,6 +68,7 @@ class LLMJudge:
             prompt=prompt,
             model=self.model,
             timeout_seconds=300,
+            no_mcp=self.no_mcp,
         )
         if not result.ok:
             return FitnessScore(feedback=f"CLI error: {result.error}")

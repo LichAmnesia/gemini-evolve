@@ -147,6 +147,8 @@ def _simulate_agent(
     task_input: str,
     model: str,
     target_path: Path | None = None,
+    *,
+    no_mcp: bool = False,
     **kwargs,
 ) -> str:
     """Simulate an agent response via Gemini CLI.
@@ -174,6 +176,7 @@ def _simulate_agent(
         prompt=task_input,
         timeout_seconds=300,
         cwd=cwd,
+        no_mcp=no_mcp,
     )
     if result.ok:
         return result.response
@@ -182,14 +185,15 @@ def _simulate_agent(
     return ""
 
 
-_judge_cache: dict[str, LLMJudge] = {}
+_judge_cache: dict[tuple[str, bool], LLMJudge] = {}
 
 
-def _get_judge(model: str) -> LLMJudge:
-    """Reuse a single LLMJudge instance per model."""
-    if model not in _judge_cache:
-        _judge_cache[model] = LLMJudge(model=model)
-    return _judge_cache[model]
+def _get_judge(model: str, no_mcp: bool = False) -> LLMJudge:
+    """Reuse a single LLMJudge instance per (model, no_mcp) pair."""
+    key = (model, no_mcp)
+    if key not in _judge_cache:
+        _judge_cache[key] = LLMJudge(model=model, no_mcp=no_mcp)
+    return _judge_cache[key]
 
 
 def _evaluate_variant(
@@ -208,6 +212,7 @@ def _evaluate_variant(
         output = _simulate_agent(
             variant, ex.task_input, config.mutator_model,
             target_path=target_path,
+            no_mcp=config.no_mcp,
         )
 
         # Skip examples where CLI timed out or failed — don't penalize with 0
@@ -215,7 +220,7 @@ def _evaluate_variant(
             continue
 
         if use_llm_judge:
-            judge = _get_judge(config.judge_model)
+            judge = _get_judge(config.judge_model, no_mcp=config.no_mcp)
             score = judge.score(variant, ex.task_input, ex.expected_behavior, output)
             scores.append(score.composite)
         else:
@@ -282,7 +287,7 @@ def evolve(
         return _empty_result(target, time.time() - start_time)
 
     # --- Step 4-5: Evolution loop ---
-    mutator = Mutator(model=config.mutator_model)
+    mutator = Mutator(model=config.mutator_model, no_mcp=config.no_mcp)
     best_variant = target["content"]
     eval_kw = dict(target_path=target_path)
     best_score = _evaluate_variant(best_variant, dataset.val, config, use_llm_judge, **eval_kw)
@@ -349,11 +354,12 @@ def evolve(
 
         # Accumulate feedback for next generation
         if use_llm_judge:
-            judge = _get_judge(config.judge_model)
+            judge = _get_judge(config.judge_model, no_mcp=config.no_mcp)
             sample_ex = dataset.val[0] if dataset.val else dataset.train[0]
             output = _simulate_agent(
                 best_variant, sample_ex.task_input, config.mutator_model,
                 target_path=target_path,
+                no_mcp=config.no_mcp,
             )
             judge_score = judge.score(
                 best_variant, sample_ex.task_input, sample_ex.expected_behavior, output
@@ -431,7 +437,7 @@ def _build_dataset(
             return EvalDataset(train=examples[:t], val=examples[t:v], holdout=examples[v:])
 
     # Default: synthetic
-    builder = SyntheticDatasetBuilder(model=config.dataset_model)
+    builder = SyntheticDatasetBuilder(model=config.dataset_model, no_mcp=config.no_mcp)
     return builder.generate(
         instructions, count=config.dataset_size, train_ratio=config.train_ratio, val_ratio=config.val_ratio
     )

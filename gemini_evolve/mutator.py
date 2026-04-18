@@ -68,8 +68,9 @@ Output ONLY the combined instructions.
 class Mutator:
     """Generates instruction variants through Gemini CLI."""
 
-    def __init__(self, model: str | None = None):
+    def __init__(self, model: str | None = None, *, no_mcp: bool = False):
         self.model = model
+        self.no_mcp = no_mcp
 
     def mutate(
         self,
@@ -90,6 +91,7 @@ class Mutator:
             prompt=prompt,
             model=self.model,
             timeout_seconds=300,
+            no_mcp=self.no_mcp,
         )
         return result.response if result.ok else ""
 
@@ -110,6 +112,7 @@ class Mutator:
             prompt=prompt,
             model=self.model,
             timeout_seconds=300,
+            no_mcp=self.no_mcp,
         )
         return result.response if result.ok else ""
 
