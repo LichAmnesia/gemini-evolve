@@ -181,7 +181,7 @@ class GeminiCLILM(_DSPyLM):  # type: ignore[misc]
     ) -> None:
         if not _DSPY_AVAILABLE:
             raise ImportError(
-                "dspy is required for GeminiCLILM. Install with: pip install 'gemini-evolve[dspy]'"
+                "dspy is required for GeminiCLILM. Reinstall with: pip install -e '.[dev]'"
             )
         super().__init__(model=f"cli/{model}", cache=False, **kwargs)
         self._cli_model = model

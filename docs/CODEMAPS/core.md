@@ -79,7 +79,7 @@ CLI command
 - `gemini_evolve/evolve.py` is the orchestration center and the largest file in the repo.
 - Session evaluation uses user prompts only, not assistant responses.
 - Secret-looking session files are skipped wholesale before extraction.
-- The DSPy path is optional and requires the `dspy` extra from `pyproject.toml`.
+- The DSPy path ships with the default dependency set in `pyproject.toml`.
 - `GeminiCLILM` runs in an isolated cwd by default so stray local `GEMINI.md` files do not contaminate evaluation.
 
 ## Related Areas

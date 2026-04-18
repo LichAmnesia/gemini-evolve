@@ -2,20 +2,37 @@
 name = "gemini-evolve"
 version = "0.1.0"
 description = "Self-evolution system for Gemini CLI — automatically improve system instructions, commands, and skills"
+readme = "README.md"
 requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "Shen Huang" },
+]
+keywords = ["gemini", "cli", "evolution", "gepa", "dspy", "prompt-optimization"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+]
 dependencies = [
     "click>=8.0",
     "rich>=13.0",
     "watchdog>=4.0",
+    "dspy>=2.6",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
 ]
-dspy = [
-    "dspy>=2.6",
-]
+
+[project.urls]
+Homepage = "https://github.com/LichAmnesia/gemini-evolve"
+Repository = "https://github.com/LichAmnesia/gemini-evolve"
+Issues = "https://github.com/LichAmnesia/gemini-evolve/issues"
 
 [project.scripts]
 gemini-evolve = "gemini_evolve.cli:main"

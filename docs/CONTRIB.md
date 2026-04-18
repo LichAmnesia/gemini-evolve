@@ -37,11 +37,7 @@ Prereqs outside the repo:
 ./.venv/bin/pytest -q
 ```
 
-Optional GEPA env:
-
-```bash
-./.venv/bin/pip install -e ".[dev,dspy]"
-```
+DSPy and GEPA are installed as part of the default dependency set above.
 
 ## Change Rules
 

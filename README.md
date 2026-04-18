@@ -21,11 +21,7 @@ gemini --version
 
 If the venv is activated, drop the `./.venv/bin/` prefix.
 
-To use the optional GEPA/DSPy engine:
-
-```bash
-./.venv/bin/pip install -e ".[dev,dspy]"
-```
+The GEPA/DSPy engine is included by default — no extra install step needed.
 
 ## Quickstart
 

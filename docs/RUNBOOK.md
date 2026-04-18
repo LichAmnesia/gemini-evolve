@@ -15,11 +15,7 @@ If `gemini-evolve` is missing, reinstall editable deps:
 ./.venv/bin/pip install -e ".[dev]"
 ```
 
-If you want the GEPA engine:
-
-```bash
-./.venv/bin/pip install -e ".[dev,dspy]"
-```
+The GEPA/DSPy engine ships with the default dependency set.
 
 ## Run A Safe Check
 

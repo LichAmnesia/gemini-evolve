@@ -21,11 +21,7 @@ gemini --version
 
 若已激活 venv，可省略 `./.venv/bin/` 前缀。
 
-使用可选的 GEPA/DSPy 引擎：
-
-```bash
-./.venv/bin/pip install -e ".[dev,dspy]"
-```
+GEPA/DSPy 引擎已内置于默认依赖，无需额外安装。
 
 ## 快速上手
 
