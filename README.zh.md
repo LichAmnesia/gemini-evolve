@@ -40,10 +40,11 @@ test -f ~/.gemini/GEMINI.md || printf '# Gemini Instructions\n' > ~/.gemini/GEMI
 ./.venv/bin/gemini-evolve evolve ~/.gemini/GEMINI.md --dry-run
 ```
 
-3. 跑一次小规模 review。
+3. 跑一次小规模 review（默认走 GEPA 引擎）。
 
 ```bash
-./.venv/bin/gemini-evolve evolve ~/.gemini/GEMINI.md -g 2 -p 2
+./.venv/bin/gemini-evolve evolve ~/.gemini/GEMINI.md --gepa-budget light
+# 想用更轻量的锦标赛 GA，加 --engine ga
 ```
 
 4. 查看产物。
@@ -61,10 +62,16 @@ cat output/global/$(ls -t output/global | head -1)/metrics.json
 
 `--apply` 成功时，会在覆盖前把原文件备份为 `GEMINI.md.<UTC 时间戳>.bak`。
 
-可选的 GEPA 流程：
+开启 GEPA 的轨迹反射（看 Gemini 工具调用轨迹）：
 
 ```bash
-./.venv/bin/gemini-evolve evolve ~/.gemini/GEMINI.md --engine gepa --capture-trace --gepa-budget light
+./.venv/bin/gemini-evolve evolve ~/.gemini/GEMINI.md --capture-trace --gepa-budget light
+```
+
+想切回锦标赛 GA 引擎：
+
+```bash
+./.venv/bin/gemini-evolve evolve ~/.gemini/GEMINI.md --engine ga -g 2 -p 2
 ```
 
 ## 支持进化的目标
@@ -175,10 +182,12 @@ cat output/global/$(ls -t output/global | head -1)/metrics.json
 
 ```text
 gemini-evolve discover --type instructions|commands|skills
-gemini-evolve evolve TARGET [--dry-run] [--apply] [-g N] [-p N] [--engine ga|gepa]
+gemini-evolve evolve TARGET [--dry-run] [--apply] [-g N] [-p N]
+                     [--engine gepa|ga]
                      [--capture-trace] [--gepa-budget light|medium|heavy]
                      [--reflection-model MODEL]
 gemini-evolve evolve-all --type instructions|commands|skills [--apply]
+                         [--engine gepa|ga] [--gepa-budget light|medium|heavy]
 gemini-evolve trigger watch [--dir PATH] [--debounce FLOAT] [--type TYPE] [--apply]
 gemini-evolve trigger cron-install [--interval N] [--type TYPE] [--apply]
 gemini-evolve trigger cron-status
@@ -191,9 +200,9 @@ gemini-evolve trigger hook-remove [REPO]
 
 引擎差异：
 
-- `ga` —— `gemini_evolve/evolve.py` 中内置的锦标赛式遗传循环。
-- `gepa` —— 走 `gemini_evolve/gepa_evolve.py` 里的 DSPy GEPA 优化。
-- `evolve-all` —— 目前仅走 GA 路径。
+- `gepa`（默认）—— 走 `gemini_evolve/gepa_evolve.py` 里的 DSPy + GEPA 反思式优化，通常在相同调用预算下质量更好。
+- `ga` —— `gemini_evolve/evolve.py` 中内置的锦标赛式遗传循环，更轻量，无 DSPy 额外开销。
+- `evolve-all` 同样支持 `--engine`，默认也是 `gepa`。
 
 ## 开发
 

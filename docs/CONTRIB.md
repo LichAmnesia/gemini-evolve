@@ -14,7 +14,7 @@ Prereqs outside the repo:
 
 - `gemini` CLI installed and authenticated
 - macOS only for `trigger cron-*`
-- `dspy` only if you are working on `--engine gepa`
+- `dspy` ships with the default deps; needed for the default `gepa` engine and tests that touch `dspy_adapter.py`
 
 ## Repo Layout
 
@@ -22,7 +22,7 @@ Prereqs outside the repo:
 | --- | --- |
 | `gemini_evolve/cli.py` | Click CLI commands |
 | `gemini_evolve/evolve.py` | Main evolution orchestration |
-| `gemini_evolve/gepa_evolve.py` | Optional DSPy GEPA evolution path |
+| `gemini_evolve/gepa_evolve.py` | Default DSPy GEPA evolution path |
 | `gemini_evolve/dspy_adapter.py` | DSPy LM adapter backed by `gemini` CLI |
 | `gemini_evolve/triggers/` | Watch, cron, hook automation |
 | `tests/` | Unit tests |

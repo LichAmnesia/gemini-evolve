@@ -43,8 +43,8 @@ def main():
 @click.option(
     "--engine",
     type=click.Choice(["ga", "gepa"]),
-    default="ga",
-    help="Evolution engine: 'ga' = built-in tournament GA, 'gepa' = DSPy+GEPA reflective.",
+    default="gepa",
+    help="Evolution engine: 'gepa' (default) = DSPy+GEPA reflective, 'ga' = built-in tournament GA.",
 )
 @click.option(
     "--capture-trace",
@@ -145,6 +145,18 @@ def evolve(
 @click.option("--llm-judge", is_flag=True)
 @click.option("--output", "-o", type=click.Path(path_type=Path), default="output")
 @click.option("--apply", is_flag=True, help="Write back to original files if improved.")
+@click.option(
+    "--engine",
+    type=click.Choice(["ga", "gepa"]),
+    default="gepa",
+    help="Evolution engine: 'gepa' (default) = DSPy+GEPA reflective, 'ga' = built-in tournament GA.",
+)
+@click.option(
+    "--gepa-budget",
+    type=click.Choice(["light", "medium", "heavy"]),
+    default="light",
+    help="(GEPA only) Auto-budget: approx. metric-call budget. Default 'light'.",
+)
 def evolve_all(
     target_type: str,
     generations: int,
@@ -155,9 +167,11 @@ def evolve_all(
     llm_judge: bool,
     output: Path,
     apply: bool,
+    engine: str,
+    gepa_budget: str,
 ):
     """Discover and evolve all targets of a given type."""
-    from .evolve import evolve as run_evolve, discover_targets
+    from .evolve import discover_targets
 
     if eval_source == "golden" and eval_dataset is None:
         raise click.UsageError("--eval-dataset is required when using --eval-source golden")
@@ -177,15 +191,30 @@ def evolve_all(
 
     for target in targets:
         try:
-            result = run_evolve(
-                target_path=target,
-                config=config,
-                eval_source=eval_source,
-                eval_dataset_path=eval_dataset,
-                dry_run=dry_run,
-                use_llm_judge=llm_judge,
-                apply=apply,
-            )
+            if engine == "gepa":
+                from .gepa_evolve import evolve_with_gepa
+
+                result = evolve_with_gepa(
+                    target_path=target,
+                    config=config,
+                    eval_source=eval_source,
+                    eval_dataset_path=eval_dataset,
+                    dry_run=dry_run,
+                    apply=apply,
+                    auto_budget=gepa_budget,
+                )
+            else:
+                from .evolve import evolve as run_evolve
+
+                result = run_evolve(
+                    target_path=target,
+                    config=config,
+                    eval_source=eval_source,
+                    eval_dataset_path=eval_dataset,
+                    dry_run=dry_run,
+                    use_llm_judge=llm_judge,
+                    apply=apply,
+                )
             results.append(result)
         except Exception as e:
             console.print(f"[red]Failed: {target} — {e}[/red]")

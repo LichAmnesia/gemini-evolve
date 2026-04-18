@@ -59,19 +59,25 @@ Rollback:
 cp ~/.gemini/GEMINI.md.<timestamp>.bak ~/.gemini/GEMINI.md
 ```
 
-## GEPA Mode
+## Engines
 
-Run:
+GEPA is the default engine. To enable trace reflection:
 
 ```bash
-./.venv/bin/gemini-evolve evolve ~/.gemini/GEMINI.md --engine gepa --capture-trace --gepa-budget light
+./.venv/bin/gemini-evolve evolve ~/.gemini/GEMINI.md --capture-trace --gepa-budget light
+```
+
+To fall back to the lighter tournament GA:
+
+```bash
+./.venv/bin/gemini-evolve evolve ~/.gemini/GEMINI.md --engine ga -g 2 -p 2
 ```
 
 Notes:
 
-- requires the `dspy` extra
-- only `evolve` exposes `--engine gepa`; `evolve-all` stays on the GA path
-- `--capture-trace` re-reads Gemini session files and feeds tool traces into reflection
+- `dspy` ships in the default dependency set; no extra install needed.
+- Both `evolve` and `evolve-all` accept `--engine gepa|ga`.
+- `--capture-trace` re-reads Gemini session files and feeds tool traces into reflection.
 
 ## Session Watch Mode
 

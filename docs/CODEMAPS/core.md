@@ -50,8 +50,8 @@ CLI command
 2. `discover_targets()` resolves artifact paths.
 3. `load_target()` reads the source file and infers a target name.
 4. `_build_dataset()` chooses synthetic, session, or golden eval input.
-5. `--engine ga` uses `ConstraintValidator`, `Mutator`, and `_simulate_agent()`.
-6. `--engine gepa` uses `GeminiCLILM` plus `dspy.GEPA`, optionally with captured CLI tool traces.
+5. `--engine gepa` (default) uses `GeminiCLILM` plus `dspy.GEPA`, optionally with captured CLI tool traces.
+6. `--engine ga` uses `ConstraintValidator`, `Mutator`, and `_simulate_agent()`.
 7. Both engines produce the same `EvolutionResult` shape.
 8. `_save_result()` writes result artifacts under `output/<target>/<timestamp>/`.
 9. `_apply_result()` optionally backs up the original file and overwrites it.
