@@ -337,7 +337,7 @@ def evolve_with_gepa(
         metric=metric,
         auto=auto_budget,  # type: ignore[arg-type]
         reflection_lm=reflector_lm,
-        num_threads=3,  # Parallel Gemini CLI calls; bump higher if no rate-limit hits.
+        num_threads=1,  # GeminiCLILM shares last_trace/last_result state; parallel unsafe.
         track_stats=False,
     )
 
