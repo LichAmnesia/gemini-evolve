@@ -7,7 +7,7 @@
 
 | Integration | Where Used | Purpose | Notes |
 | --- | --- | --- | --- |
-| `gemini` CLI binary | `cli_runner.py`, indirectly throughout the system | Mutation, dataset generation, judging, simulation | Must be on `PATH`; called with `-p`, `-o json`, `--sandbox`, `--approval-mode plan` |
+| `gemini` CLI binary | `cli_runner.py`, indirectly throughout the system | Mutation, dataset generation, judging, simulation | Must be on `PATH`; called with `-p`, `-o json`, `--approval-mode plan` (plan already blocks exec, so `--sandbox` is off by default for speed) |
 | DSPy / `dspy.GEPA` | `dspy_adapter.py`, `gepa_evolve.py` | Reflective optimizer engine | Part of default install |
 | `~/.gemini` home | `config.py`, `evolve.py`, `session_miner.py`, trigger logs | Target discovery, session mining, logs | Override root with `GEMINI_EVOLVE_HOME` |
 | `~/.gemini/tmp/*/chats/session-*.json` | `session_miner.py` | Session-source evaluation data | Secret-containing sessions are skipped |

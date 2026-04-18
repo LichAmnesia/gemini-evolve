@@ -8,3 +8,4 @@ build/
 *.pyc
 .gemini/evolve*.log
 SPEC.md
+critic-loop-state/

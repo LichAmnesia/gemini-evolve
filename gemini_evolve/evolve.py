@@ -151,7 +151,7 @@ def _simulate_agent(
 ) -> str:
     """Simulate an agent response via Gemini CLI.
 
-    Runs the prompt through `gemini -p` in plan/sandbox mode so the CLI loads
+    Runs the prompt through `gemini -p` in plan mode so the CLI loads
     the full environment (GEMINI.md, tools, skills, MCP). This evaluates
     instruction quality in the real deployment context.
     """

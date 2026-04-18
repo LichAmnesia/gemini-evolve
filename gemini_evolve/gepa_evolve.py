@@ -337,7 +337,7 @@ def evolve_with_gepa(
         metric=metric,
         auto=auto_budget,  # type: ignore[arg-type]
         reflection_lm=reflector_lm,
-        num_threads=1,  # Gemini CLI is already slow; avoid overload.
+        num_threads=3,  # Parallel Gemini CLI calls; bump higher if no rate-limit hits.
         track_stats=False,
     )
 

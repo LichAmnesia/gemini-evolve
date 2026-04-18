@@ -49,7 +49,7 @@ def run_gemini_cli(
     timeout_seconds: int = 300,
     model: str | None = None,
     cwd: Path | None = None,
-    sandbox: bool = True,
+    sandbox: bool = False,
 ) -> CLIResult:
     """Execute a single prompt via `gemini -p "..." -o json`.
 
@@ -62,7 +62,11 @@ def run_gemini_cli(
         timeout_seconds: Max wall-clock time before killing the process.
         model: Override model (--model flag). None = CLI default.
         cwd: Working directory for the CLI process.
-        sandbox: Run in sandbox mode (no file writes).
+        sandbox: Run in sandbox mode (no file writes). Off by default — we
+            always run with ``--approval-mode plan`` which already blocks
+            execution, so the sandbox adds 5–20s of startup overhead per
+            call without any extra safety. Opt in if you have custom tools
+            that can bypass plan mode.
     """
     gemini = find_gemini_cli()
     if not gemini:
@@ -73,7 +77,7 @@ def run_gemini_cli(
         cmd.extend(["-m", model])
     if sandbox:
         cmd.extend(["--sandbox"])
-    # Use plan mode to prevent the CLI from making changes during evaluation
+    # Plan mode prevents the CLI from executing tools during evaluation.
     cmd.extend(["--approval-mode", "plan"])
 
     try:
