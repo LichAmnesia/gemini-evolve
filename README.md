@@ -1,5 +1,7 @@
 # gemini-evolve
 
+English | [简体中文](README.zh.md)
+
 `gemini-evolve` improves Gemini CLI instruction artifacts by mutating candidates with Gemini CLI itself, scoring them against evaluation tasks, and only applying changes when hard gates pass.
 
 - No direct Gemini SDK/API usage.
@@ -167,7 +169,7 @@ Environment variables read by the code:
 | --- | --- | --- |
 | `GEMINI_EVOLVE_HOME` | `~/.gemini` | Base Gemini home for targets and session mining |
 | `GEMINI_EVOLVE_MUTATOR_MODEL` | `gemini-3-flash-preview` | Variant generation |
-| `GEMINI_EVOLVE_JUDGE_MODEL` | `gemini-2.5-pro-preview-05-06` | LLM judge scoring |
+| `GEMINI_EVOLVE_JUDGE_MODEL` | `gemini-3.1-pro-preview` | LLM judge scoring |
 | `GEMINI_EVOLVE_POPULATION` | `4` | Population size |
 | `GEMINI_EVOLVE_GENERATIONS` | `5` | Number of generations |
 | `GEMINI_EVOLVE_OUTPUT` | `output` | Result directory |
@@ -223,3 +225,7 @@ gemini_evolve/
   triggers/           watch, cron, hook automation
 tests/                Unit tests for parsing, constraints, hooks, datasets, apply
 ```
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=LichAmnesia/gemini-evolve&type=Date)](https://www.star-history.com/#LichAmnesia/gemini-evolve&Date)
